@@ -1,0 +1,67 @@
+<?php use App\Core\Compile; ?>
+<?php include Compile::include(APP_PATH . 'app/views/admin/header.inc.htm'); ?>
+<div class="mx-auto w-full max-w-5xl space-y-6 px-4">
+    <section class="glass-panel rounded-2xl p-6">
+        <h1 class="mb-4 text-2xl font-bold"><?php echo $view->e('language.uuub_ai_hub_daily_usage'); ?></h1>
+        <?php if (!$view->raw('daily')) { ?><p><?php echo $view->e('language.no_data_available'); ?></p><?php } ?>
+        <?php if ($view->raw('daily')) { ?>
+        <table class="w-full text-left text-sm">
+            <thead>
+            <tr class="border-b">
+                <th class="py-2"><?php echo $view->e('language.uuub_ai_hub_day'); ?></th>
+                <th class="py-2"><?php echo $view->e('language.uuub_ai_hub_calls'); ?></th>
+                <th class="py-2"><?php echo $view->e('language.uuub_ai_hub_errors'); ?></th>
+                <th class="py-2"><?php echo $view->e('language.uuub_ai_hub_tokens'); ?></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($view->raw('daily') as $dayIndex => $day) { ?>
+            <tr class="border-b">
+                <td class="py-2"><?php echo $view->e('daily.' . $dayIndex . '.day'); ?></td>
+                <td class="py-2"><?php echo $view->e('daily.' . $dayIndex . '.calls'); ?></td>
+                <td class="py-2"><?php echo $view->e('daily.' . $dayIndex . '.errors'); ?></td>
+                <td class="py-2"><?php echo $view->e('daily.' . $dayIndex . '.tokens'); ?></td>
+            </tr>
+            <?php } ?>
+            </tbody>
+        </table>
+        <?php } ?>
+    </section>
+
+    <section class="glass-panel rounded-2xl p-6">
+        <h2 class="mb-4 text-xl font-bold"><?php echo $view->e('language.uuub_ai_hub_recent_logs'); ?></h2>
+        <?php if (!$view->raw('logs')) { ?><p><?php echo $view->e('language.no_data_available'); ?></p><?php } ?>
+        <?php if ($view->raw('logs')) { ?>
+        <table class="w-full text-left text-sm">
+            <thead>
+            <tr class="border-b">
+                <th class="py-2"><?php echo $view->e('language.uuub_ai_hub_log_time'); ?></th>
+                <th class="py-2"><?php echo $view->e('language.uuub_ai_hub_log_consumer'); ?></th>
+                <th class="py-2"><?php echo $view->e('language.uuub_ai_hub_log_slot'); ?></th>
+                <th class="py-2"><?php echo $view->e('language.uuub_ai_hub_log_method'); ?></th>
+                <th class="py-2"><?php echo $view->e('language.uuub_ai_hub_log_model'); ?></th>
+                <th class="py-2"><?php echo $view->e('language.uuub_ai_hub_log_latency'); ?></th>
+                <th class="py-2"><?php echo $view->e('language.uuub_ai_hub_log_status'); ?></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($view->raw('logs') as $logIndex => $logRow) { ?>
+            <tr class="border-b">
+                <td class="py-2"><?php echo $view->e('logs.' . $logIndex . '.time'); ?></td>
+                <td class="py-2"><?php echo $view->e('logs.' . $logIndex . '.consumer'); ?></td>
+                <td class="py-2"><?php echo $view->e('logs.' . $logIndex . '.slot'); ?></td>
+                <td class="py-2"><?php echo $view->e('logs.' . $logIndex . '.method'); ?></td>
+                <td class="py-2"><?php echo $view->e('logs.' . $logIndex . '.model'); ?></td>
+                <td class="py-2"><?php echo $view->e('logs.' . $logIndex . '.latency_ms'); ?>ms</td>
+                <td class="py-2"><?php echo $view->e('logs.' . $logIndex . '.status'); ?></td>
+            </tr>
+            <?php } ?>
+            </tbody>
+        </table>
+        <?php } ?>
+        <?php if ($view->raw('next_url') !== '') { ?>
+        <a class="mt-4 inline-block text-blue-600" href="<?php echo $view->e('next_url'); ?>"><?php echo $view->e('language.uuub_ai_hub_next_page'); ?></a>
+        <?php } ?>
+    </section>
+</div>
+<?php include Compile::include(APP_PATH . 'app/views/admin/footer.inc.htm'); ?>

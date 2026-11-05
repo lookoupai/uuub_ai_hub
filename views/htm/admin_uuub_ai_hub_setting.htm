@@ -1,0 +1,369 @@
+<?php use App\Core\Compile; ?>
+<?php include Compile::include(APP_PATH . 'app/views/admin/header.inc.htm'); ?>
+<div class="mx-auto w-full max-w-5xl space-y-6 px-4">
+    <section class="glass-panel rounded-2xl p-6">
+        <h1 class="mb-3 text-2xl font-bold"><?php echo $view->e('language.uuub_ai_hub_title'); ?></h1>
+        <p class="mb-5 text-sm text-gray-500"><?php echo $view->e('language.uuub_ai_hub_description'); ?></p>
+        <dl class="grid gap-3 sm:grid-cols-3">
+            <div><?php echo $view->e('language.uuub_ai_hub_usage_today'); ?>: <strong><?php echo $view->e('today_calls'); ?></strong></div>
+            <div><?php echo $view->e('language.uuub_ai_hub_errors'); ?>: <strong><?php echo $view->e('today_errors'); ?></strong></div>
+            <div><?php echo $view->e('language.uuub_ai_hub_tokens'); ?>: <strong><?php echo $view->e('today_tokens'); ?></strong></div>
+        </dl>
+        <a class="mt-4 inline-block text-blue-600" href="<?php echo $view->e('usage_url'); ?>"><?php echo $view->e('language.uuub_ai_hub_usage_link'); ?></a>
+    </section>
+
+    <section class="glass-panel rounded-2xl p-6">
+        <h2 class="mb-4 text-xl font-bold"><?php echo $view->e('language.uuub_ai_hub_providers'); ?></h2>
+        <?php if (!$view->raw('providers')) { ?><p><?php echo $view->e('language.no_data_available'); ?></p><?php } ?>
+        <?php foreach ($view->raw('providers') as $providerIndex => $provider) { ?>
+        <div class="mb-3 flex flex-wrap items-center gap-3 rounded-xl border p-4">
+            <strong><?php echo $view->e('providers.' . $providerIndex . '.key'); ?></strong>
+            <span><?php echo $view->e('providers.' . $providerIndex . '.protocol'); ?> · <?php echo $view->e('providers.' . $providerIndex . '.model'); ?> · <?php echo $view->e('providers.' . $providerIndex . '.model_count'); ?> <?php echo $view->e('language.uuub_ai_hub_models_unit'); ?></span>
+            <span class="text-sm text-gray-500"><?php echo $view->e('providers.' . $providerIndex . '.base_url'); ?></span>
+            <a class="text-blue-600" href="<?php echo $view->e('providers.' . $providerIndex . '.editUrl'); ?>"><?php echo $view->e('language.update'); ?></a>
+            <form class="ajax-form" action="<?php echo $view->e('test_url'); ?>" method="post">
+                <input type="hidden" name="_csrf_token" value="<?php echo $view->e('csrf_token'); ?>">
+                <input type="hidden" name="providerKey" value="<?php echo $view->e('providers.' . $providerIndex . '.key'); ?>">
+                <button class="rounded-lg border px-3 py-2" type="submit"><?php echo $view->e('language.uuub_ai_hub_test'); ?></button>
+            </form>
+            <form class="ajax-form" action="<?php echo $view->e('delete_provider_url'); ?>" method="post">
+                <input type="hidden" name="_csrf_token" value="<?php echo $view->e('csrf_token'); ?>">
+                <input type="hidden" name="providerKey" value="<?php echo $view->e('providers.' . $providerIndex . '.key'); ?>">
+                <button class="rounded-lg border px-3 py-2 text-red-600" type="submit" onclick="return confirm('<?php echo $view->e('language.uuub_ai_hub_delete_confirm'); ?>');"><?php echo $view->e('language.uuub_ai_hub_delete'); ?></button>
+            </form>
+        </div>
+        <?php } ?>
+    </section>
+
+    <section class="glass-panel rounded-2xl p-6">
+        <h2 class="mb-4 text-xl font-bold"><?php echo $view->raw('form.providerKey') !== '' ? $view->e('language.uuub_ai_hub_editing') . ': ' . $view->raw('form.providerKey') : $view->e('language.uuub_ai_hub_new_provider'); ?></h2>
+        <form class="ajax-form space-y-4" id="aihub_provider_form" action="<?php echo $view->e('save_provider_url'); ?>" method="post" autocomplete="off">
+            <input type="hidden" name="_csrf_token" value="<?php echo $view->e('csrf_token'); ?>">
+            <label class="block text-sm font-medium"><?php echo $view->e('language.uuub_ai_hub_provider_key'); ?>
+                <input class="mt-1 w-full rounded-lg border bg-transparent p-2" type="text" name="providerKey" value="<?php echo $view->e('form.providerKey'); ?>"<?php echo $view->raw('form.providerKey') !== '' ? ' readonly' : ''; ?>>
+            </label>
+            <label class="block text-sm font-medium"><?php echo $view->e('language.uuub_ai_hub_protocol'); ?>
+                <select class="mt-1 w-full rounded-lg border border-gray-200 bg-white p-2 text-gray-900 dark:border-gray-700 dark:bg-slate-800 dark:text-white" name="protocol">
+                    <?php foreach ($view->raw('protocolOptions') as $optionIndex => $option) { ?>
+                    <option class="bg-white text-gray-900 dark:bg-slate-800 dark:text-white" value="<?php echo $view->e('protocolOptions.' . $optionIndex . '.value'); ?>"<?php echo $option['selected'] ? ' selected' : ''; ?>><?php echo $view->e('protocolOptions.' . $optionIndex . '.text'); ?></option>
+                    <?php } ?>
+                </select>
+            </label>
+            <label class="block text-sm font-medium"><?php echo $view->e('language.uuub_ai_hub_base_url'); ?>
+                <input class="mt-1 w-full rounded-lg border bg-transparent p-2" type="text" name="base_url" value="<?php echo $view->e('form.base_url'); ?>" placeholder="https://api.openai.com/v1">
+            </label>
+            <p class="text-sm text-gray-500"><?php echo $view->e('language.uuub_ai_hub_url_hint'); ?></p>
+            <label class="block text-sm font-medium"><?php echo $view->e('language.uuub_ai_hub_api_key'); ?>
+                <input class="mt-1 w-full rounded-lg border bg-transparent p-2" type="password" name="api_key" value="" autocomplete="off">
+            </label>
+            <button class="rounded-lg border border-blue-600 px-4 py-2 text-blue-600<?php echo $view->raw('fetch_hidden') ? ' hidden' : ''; ?>" type="button" id="aihub_fetch_button"><?php echo $view->e('language.uuub_ai_hub_fetch_models'); ?></button>
+            <label class="block text-sm font-medium"><?php echo $view->e('language.uuub_ai_hub_models'); ?>
+                <textarea class="mt-1 w-full rounded-lg border bg-transparent p-2 font-mono text-sm" name="models_text" rows="6"><?php echo $view->e('form.models_text'); ?></textarea>
+            </label>
+            <p class="text-sm text-gray-500"><?php echo $view->e('language.uuub_ai_hub_models_hint'); ?></p>
+            <div class="block text-sm font-medium">
+                <span><?php echo $view->e('language.uuub_ai_hub_model'); ?></span>
+                <div class="mt-1 flex gap-2">
+                    <select class="w-full rounded-lg border border-gray-200 bg-white p-2 text-gray-900 dark:border-gray-700 dark:bg-slate-800 dark:text-white" name="model" id="aihub_model_select">
+                        <?php foreach ($view->raw('formModelOptions') as $optionIndex => $option) { ?>
+                        <option class="bg-white text-gray-900 dark:bg-slate-800 dark:text-white" value="<?php echo $view->e('formModelOptions.' . $optionIndex . '.value'); ?>"<?php echo $option['selected'] ? ' selected' : ''; ?>><?php echo $view->e('formModelOptions.' . $optionIndex . '.text'); ?></option>
+                        <?php } ?>
+                    </select>
+                    <button class="whitespace-nowrap rounded-lg border border-blue-600 px-4 py-2 text-blue-600" type="button" id="aihub_test_model_button"><?php echo $view->e('language.uuub_ai_hub_test_model'); ?></button>
+                </div>
+            </div>
+            <label class="block text-sm font-medium"><?php echo $view->e('language.uuub_ai_hub_timeout'); ?>
+                <input class="mt-1 w-full rounded-lg border bg-transparent p-2" type="number" name="timeout" min="5" max="120" value="<?php echo $view->e('form.timeout'); ?>">
+            </label>
+            <p class="text-sm text-gray-500"><?php echo $view->e('language.uuub_ai_hub_secret_tip'); ?></p>
+            <div class="flex gap-3">
+                <button class="rounded-lg bg-blue-600 px-5 py-3 text-white" type="submit"><?php echo $view->e('language.submit'); ?></button>
+                <a class="px-4 py-3 text-blue-600" href="<?php echo $view->e('new_url'); ?>"><?php echo $view->e('language.uuub_ai_hub_new_provider'); ?></a>
+            </div>
+        </form>
+    </section>
+
+    <section class="glass-panel rounded-2xl p-6">
+        <h2 class="mb-4 text-xl font-bold"><?php echo $view->e('language.uuub_ai_hub_routing'); ?></h2>
+        <form class="ajax-form space-y-4" action="<?php echo $view->e('routing_url'); ?>" method="post">
+            <input type="hidden" name="_csrf_token" value="<?php echo $view->e('csrf_token'); ?>">
+            <?php foreach ($view->raw('slotSelects') as $slotIndex => $slot) { ?>
+            <div class="block text-sm font-medium">
+                <span><?php echo $view->e('slotSelects.' . $slotIndex . '.label'); ?></span>
+                <div class="mt-1 grid gap-2 sm:grid-cols-2" data-slot-row>
+                    <select class="w-full rounded-lg border border-gray-200 bg-white p-2 text-gray-900 dark:border-gray-700 dark:bg-slate-800 dark:text-white" name="<?php echo $view->e('slotSelects.' . $slotIndex . '.name'); ?>" data-slot-provider>
+                        <?php foreach ($slot['provider_options'] as $optionIndex => $option) { ?>
+                        <option class="bg-white text-gray-900 dark:bg-slate-800 dark:text-white" value="<?php echo $view->e('slotSelects.' . $slotIndex . '.provider_options.' . $optionIndex . '.value'); ?>"<?php echo $option['selected'] ? ' selected' : ''; ?>><?php echo $view->e('slotSelects.' . $slotIndex . '.provider_options.' . $optionIndex . '.text'); ?></option>
+                        <?php } ?>
+                    </select>
+                    <select class="w-full rounded-lg border border-gray-200 bg-white p-2 text-gray-900 dark:border-gray-700 dark:bg-slate-800 dark:text-white" name="<?php echo $view->e('slotSelects.' . $slotIndex . '.name'); ?>_model" data-slot-model aria-label="<?php echo $view->e('language.uuub_ai_hub_slot_model'); ?>">
+                        <?php foreach ($slot['model_options'] as $optionIndex => $option) { ?>
+                        <option class="bg-white text-gray-900 dark:bg-slate-800 dark:text-white" value="<?php echo $view->e('slotSelects.' . $slotIndex . '.model_options.' . $optionIndex . '.value'); ?>"<?php echo $option['selected'] ? ' selected' : ''; ?>><?php echo $view->e('slotSelects.' . $slotIndex . '.model_options.' . $optionIndex . '.text'); ?></option>
+                        <?php } ?>
+                    </select>
+                </div>
+            </div>
+            <?php } ?>
+            <div class="block text-sm font-medium">
+                <span><?php echo $view->e('language.uuub_ai_hub_slot_add'); ?></span>
+                <div class="mt-1 grid gap-2 sm:grid-cols-3" data-slot-row>
+                    <input class="w-full rounded-lg border border-gray-200 bg-white p-2 text-gray-900 placeholder-gray-400 dark:border-gray-700 dark:bg-slate-800 dark:text-white" type="text" name="new_slot" placeholder="slot_name" pattern="[a-z][a-z0-9_]{0,31}" maxlength="32">
+                    <select class="w-full rounded-lg border border-gray-200 bg-white p-2 text-gray-900 dark:border-gray-700 dark:bg-slate-800 dark:text-white" name="new_slot_provider" data-slot-provider>
+                        <?php foreach ((array)$view->raw('newSlotProviderOptions') as $optionIndex => $option) { ?>
+                        <option class="bg-white text-gray-900 dark:bg-slate-800 dark:text-white" value="<?php echo $view->e('newSlotProviderOptions.' . $optionIndex . '.value'); ?>"><?php echo $view->e('newSlotProviderOptions.' . $optionIndex . '.text'); ?></option>
+                        <?php } ?>
+                    </select>
+                    <select class="w-full rounded-lg border border-gray-200 bg-white p-2 text-gray-900 dark:border-gray-700 dark:bg-slate-800 dark:text-white" name="new_slot_model" data-slot-model aria-label="<?php echo $view->e('language.uuub_ai_hub_slot_model'); ?>"></select>
+                </div>
+            </div>
+            <label class="block text-sm font-medium"><?php echo $view->e('language.uuub_ai_hub_budget_calls'); ?>
+                <input class="mt-1 w-full rounded-lg border bg-transparent p-2" type="number" name="daily_calls" min="0" value="<?php echo $view->e('budget_calls'); ?>">
+            </label>
+            <label class="block text-sm font-medium"><?php echo $view->e('language.uuub_ai_hub_budget_tokens'); ?>
+                <input class="mt-1 w-full rounded-lg border bg-transparent p-2" type="number" name="daily_tokens" min="0" value="<?php echo $view->e('budget_tokens'); ?>">
+            </label>
+            <p class="text-sm text-gray-500"><?php echo $view->e('language.uuub_ai_hub_budget_tip'); ?></p>
+            <button class="rounded-lg bg-blue-600 px-5 py-3 text-white" type="submit"><?php echo $view->e('language.submit'); ?></button>
+        </form>
+    </section>
+</div>
+<script type="application/json" id="uuub_ai_hub_config">
+{
+    "fetchUrl": <?php echo json_encode($view->raw('fetch_url', ''), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+    "testUrl": <?php echo json_encode($view->raw('test_url', ''), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+    "providers": <?php echo json_encode($view->raw('providers_json', []), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>,
+    "language": <?php echo json_encode($view->raw('language', []), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
+    var node = document.getElementById('uuub_ai_hub_config');
+    if (!node || typeof window.wellcms === 'undefined') { return; }
+    var cfg = JSON.parse(node.textContent);
+    var lang = cfg.language || {};
+    var form = document.getElementById('aihub_provider_form');
+    if (!form) { return; }
+
+    function lines() {
+        return form.querySelector('[name=models_text]').value.split(/\r\n|\r|\n/)
+            .map(function (line) { return line.trim(); })
+            .filter(function (line) { return line !== ''; });
+    }
+
+    function setLines(values) {
+        form.querySelector('[name=models_text]').value = values.join('\n');
+        syncModelSelect();
+    }
+
+    /* 默认模型下拉随模型清单联动：清单为权威（model 不在清单时取首项），
+       清单为空时保留当前值供新连接手填场景 */
+    function syncModelSelect() {
+        var select = form.querySelector('[name=model]');
+        if (!select) { return; }
+        var current = select.value;
+        var models = [];
+        var seen = {};
+        lines().forEach(function (model) {
+            if (seen[model]) { return; }
+            seen[model] = true;
+            models.push(model);
+        });
+        select.textContent = '';
+        if (!models.length) {
+            appendOption(select, current, current);
+            return;
+        }
+        if (models.indexOf(current) === -1) {
+            current = models[0];
+        }
+        models.forEach(function (model) {
+            appendOption(select, model, model);
+        });
+        select.value = current;
+    }
+
+    function appendOption(select, value, text) {
+        var option = document.createElement('option');
+        option.value = value;
+        option.textContent = text;
+        select.appendChild(option);
+    }
+
+    /* 拉取按钮仅对 openai 协议连接有意义（jev 无 /models 端点） */
+    var protocolSelect = form.querySelector('[name=protocol]');
+    var fetchButton = document.getElementById('aihub_fetch_button');
+    function toggleFetch() {
+        fetchButton.classList.toggle('hidden', protocolSelect.value !== 'openai');
+    }
+    protocolSelect.addEventListener('change', toggleFetch);
+    toggleFetch();
+    syncModelSelect();
+    form.querySelector('[name=models_text]').addEventListener('input', syncModelSelect);
+
+    /* 槽位模型下拉随连接联动：选项来自 providers 配置（不含密钥） */
+    function fillModelSelect(select, providerKey) {
+        var info = cfg.providers[providerKey];
+        var models = info && info.models ? info.models : [];
+        select.textContent = '';
+        if (!models.length) {
+            var empty = document.createElement('option');
+            empty.value = '';
+            empty.textContent = lang.uuub_ai_hub_unbound || '';
+            select.appendChild(empty);
+            return;
+        }
+        models.forEach(function (model) {
+            var option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            select.appendChild(option);
+        });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('[data-slot-provider]'), function (providerSelect) {
+        var row = providerSelect.closest('[data-slot-row]');
+        var modelSelect = row ? row.querySelector('[data-slot-model]') : null;
+        if (!modelSelect) { return; }
+        if (modelSelect.options.length === 0) {
+            fillModelSelect(modelSelect, providerSelect.value);
+        }
+        providerSelect.addEventListener('change', function () {
+            fillModelSelect(modelSelect, providerSelect.value);
+        });
+    });
+
+    function openFetchDialog(models) {
+        var editKey = form.querySelector('[name=providerKey]').value;
+        var current = [];
+        var seen = {};
+        lines().forEach(function (model) {
+            if (seen[model]) { return; }
+            seen[model] = true;
+            current.push(model);
+        });
+        var inUse = {};
+        Object.keys(cfg.providers).forEach(function (key) {
+            if (key === editKey) { return; }
+            (cfg.providers[key].models || []).forEach(function (model) {
+                if (!inUse[model]) { inUse[model] = key; }
+            });
+        });
+        /* 弹窗骨架为静态字符串：模型 ID 来自上游（不可信），行内容一律 DOM API 填充，严禁拼进 HTML */
+        var skeleton = '<div>'
+            + '<input type="text" id="aihub_fetch_search" class="w-full rounded-lg border border-gray-200 bg-white p-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-slate-800 dark:text-white" autocomplete="off">'
+            + '<div class="mt-2 flex gap-2">'
+            + '<button type="button" id="aihub_fetch_all" class="rounded-lg border px-3 py-1.5 text-sm"></button>'
+            + '<button type="button" id="aihub_fetch_none" class="rounded-lg border px-3 py-1.5 text-sm"></button>'
+            + '</div>'
+            + '<div id="aihub_fetch_list" class="mt-2 max-h-72 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700"></div>'
+            + '</div>';
+        var applySelection = function () {
+            var checked = [];
+            Array.prototype.forEach.call(document.querySelectorAll('#aihub_fetch_list input[type=checkbox]'), function (box) {
+                if (box.checked) { checked.push(box.value); }
+            });
+            /* 手动添加、不在上游清单中的模型保留在末尾 */
+            var kept = current.filter(function (model) {
+                return models.indexOf(model) === -1 && checked.indexOf(model) === -1;
+            });
+            var next = checked.concat(kept);
+            /* setLines 内联动默认模型下拉：原默认不在新清单时自动取首项 */
+            setLines(next);
+        };
+        wellcms.dialog({
+            title: lang.uuub_ai_hub_fetch_dialog_title || '',
+            body: skeleton,
+            size: 'lg',
+            confirmText: lang.uuub_ai_hub_fetch_confirm || '',
+            cancelText: lang.uuub_ai_hub_fetch_cancel || '',
+            onConfirm: applySelection
+        });
+        var search = document.getElementById('aihub_fetch_search');
+        var list = document.getElementById('aihub_fetch_list');
+        search.placeholder = lang.uuub_ai_hub_fetch_search_placeholder || '';
+        document.getElementById('aihub_fetch_all').textContent = lang.uuub_ai_hub_fetch_select_all || '';
+        document.getElementById('aihub_fetch_none').textContent = lang.uuub_ai_hub_fetch_clear || '';
+        var rows = [];
+        models.forEach(function (model) {
+            var row = document.createElement('label');
+            row.className = 'flex items-center gap-2 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-200';
+            var box = document.createElement('input');
+            box.type = 'checkbox';
+            box.value = model;
+            box.className = 'rounded border-gray-300 text-blue-600 focus:ring-blue-500';
+            box.checked = current.indexOf(model) !== -1;
+            var text = document.createElement('span');
+            text.className = 'flex-1 break-all';
+            text.textContent = model;
+            row.appendChild(box);
+            row.appendChild(text);
+            if (inUse[model]) {
+                var tag = document.createElement('span');
+                tag.className = 'text-xs text-gray-400';
+                tag.textContent = (lang.uuub_ai_hub_in_use_by || '%s').replace('%s', inUse[model]);
+                row.appendChild(tag);
+            }
+            list.appendChild(row);
+            rows.push({ row: row, text: model.toLowerCase() });
+        });
+        search.addEventListener('input', function () {
+            var query = search.value.toLowerCase();
+            rows.forEach(function (item) {
+                item.row.classList.toggle('hidden', query !== '' && item.text.indexOf(query) === -1);
+            });
+        });
+        document.getElementById('aihub_fetch_all').addEventListener('click', function () {
+            rows.forEach(function (item) {
+                if (!item.row.classList.contains('hidden')) { item.row.querySelector('input').checked = true; }
+            });
+        });
+        document.getElementById('aihub_fetch_none').addEventListener('click', function () {
+            rows.forEach(function (item) {
+                if (!item.row.classList.contains('hidden')) { item.row.querySelector('input').checked = false; }
+            });
+        });
+    }
+
+    fetchButton.addEventListener('click', function () {
+        var payload = new FormData();
+        payload.append('_csrf_token', form.querySelector('[name=_csrf_token]').value);
+        payload.append('providerKey', form.querySelector('[name=providerKey]').value);
+        payload.append('base_url', form.querySelector('[name=base_url]').value.trim());
+        payload.append('api_key', form.querySelector('[name=api_key]').value);
+        wellcms.post(cfg.fetchUrl, payload).then(function (res) {
+            if (!res || res.code !== 0 || !Array.isArray(res.models) || res.models.length === 0) {
+                wellcms.error((res && res.message) ? res.message : (lang.uuub_ai_hub_fetch_empty || ''));
+                return;
+            }
+            openFetchDialog(res.models);
+        }).catch(function (error) {
+            wellcms.error(String((error && error.message) || error));
+        });
+    });
+
+    /* 逐模型测试：测当前下拉选中的模型（真实调用计入用量），未保存的新模型也可立即验证 */
+    document.getElementById('aihub_test_model_button').addEventListener('click', function () {
+        var providerKey = form.querySelector('[name=providerKey]').value;
+        if (!providerKey) {
+            wellcms.error(lang.uuub_ai_hub_test_need_save || '');
+            return;
+        }
+        var payload = new FormData();
+        payload.append('_csrf_token', form.querySelector('[name=_csrf_token]').value);
+        payload.append('providerKey', providerKey);
+        payload.append('model', form.querySelector('[name=model]').value);
+        payload.append('base_url', form.querySelector('[name=base_url]').value.trim());
+        payload.append('api_key', form.querySelector('[name=api_key]').value);
+        wellcms.post(cfg.testUrl, payload).then(function (res) {
+            if (!res || res.code !== 0) {
+                wellcms.error((res && res.message) ? res.message : '');
+                return;
+            }
+            wellcms.toast((res.message || '') + (res.latency_ms ? ' · ' + res.latency_ms + 'ms' : ''), 'success');
+        }).catch(function (error) {
+            wellcms.error(String((error && error.message) || error));
+        });
+    });
+});
+</script>
+<?php include Compile::include(APP_PATH . 'app/views/admin/footer.inc.htm'); ?>

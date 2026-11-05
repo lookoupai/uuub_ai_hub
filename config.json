@@ -1,0 +1,26 @@
+{
+    "name": "AI 服务中枢",
+    "brief": "AI 连接基础设施：统一管理 OpenAI 兼容与 jev 协议服务、槽位路由、用量统计与日预算熔断，供其他插件共用，自身不含业务功能。支持 provider 级扩展参数（如 Qwen 关闭思考）。",
+    "author": "lookoupai",
+    "type": "1",
+    "version": "1.0.0",
+    "software_version": "3.0.0",
+    "installed": 1,
+    "enable": 1,
+    "install": {
+        "file": "install.php"
+    },
+    "uninstall": {
+        "file": "uninstall.php"
+    },
+    "rank": 20,
+    "assets": {
+        "global": {
+            "css": [],
+            "js": []
+        }
+    },
+    "hooks_rank": [],
+    "overwrites_rank": [],
+    "dependencies": []
+}
